@@ -1,0 +1,51 @@
+name: Actus AION 2 (Steam -> Discord)
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+    inputs:
+      test_post:
+        description: 'Poster la dernière actu immédiatement (test)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  relay-news:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Restaurer le cache anti-doublon
+        uses: actions/cache@v4
+        with:
+          path: cache
+          key: steam-news-${{ github.run_id }}
+          restore-keys: |
+            steam-news-
+
+      - name: Dépendances
+        run: pip install -r requirements.txt
+
+      - name: Test (manuel)
+        if: ${{ github.event.inputs.test_post == 'true' }}
+        env:
+          DISCORD_WEBHOOK_NEWS: ${{ secrets.DISCORD_WEBHOOK_NEWS }}
+        run: python src/steam_news.py --test
+
+      - name: Relayer les nouvelles actus
+        if: ${{ github.event.inputs.test_post != 'true' }}
+        env:
+          DISCORD_WEBHOOK_NEWS: ${{ secrets.DISCORD_WEBHOOK_NEWS }}
+        run: python src/steam_news.py
