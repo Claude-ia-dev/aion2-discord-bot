@@ -1,12 +1,12 @@
-name: Actus AION 2 (Steam -> Discord)
+name: Actus AION 2 (site officiel -> Discord)
 
 on:
   schedule:
-    - cron: '7,37 * * * *'
+    - cron: '4,19,34,49 * * * *'
   workflow_dispatch:
     inputs:
       test_post:
-        description: 'Poster la dernière actu immédiatement (test)'
+        description: 'Poster un exemple (dernière maintenance + dernières notes de version)'
         required: false
         type: boolean
         default: false
@@ -31,9 +31,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: cache
-          key: steam-news-${{ github.run_id }}
+          key: aion2-news-${{ github.run_id }}
           restore-keys: |
-            steam-news-
+            aion2-news-
 
       - name: Dépendances
         run: pip install -r requirements.txt
@@ -42,10 +42,12 @@ jobs:
         if: ${{ github.event.inputs.test_post == 'true' }}
         env:
           DISCORD_WEBHOOK_NEWS: ${{ secrets.DISCORD_WEBHOOK_NEWS }}
+          DISCORD_MENTION_MAINTENANCE: ${{ secrets.DISCORD_MENTION_MAINTENANCE }}
         run: python src/steam_news.py --test
 
       - name: Relayer les nouvelles actus
         if: ${{ github.event.inputs.test_post != 'true' }}
         env:
           DISCORD_WEBHOOK_NEWS: ${{ secrets.DISCORD_WEBHOOK_NEWS }}
+          DISCORD_MENTION_MAINTENANCE: ${{ secrets.DISCORD_MENTION_MAINTENANCE }}
         run: python src/steam_news.py
