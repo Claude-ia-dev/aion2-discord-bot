@@ -17,7 +17,6 @@ FEED_URL = os.getenv("STEAM_FEED_URL", "https://store.steampowered.com/feeds/new
 WEBHOOK = os.getenv("DISCORD_WEBHOOK_NEWS", "").strip()
 MENTION = os.getenv("DISCORD_MENTION_NEWS", "").strip()
 SEEN_PATH = os.path.join("cache", "steam_seen.json")
-MAX_FIRST_RUN = 1          # au premier lancement, ne poste que la dernière actu
 MAX_PER_RUN = 3            # garde-fou anti-spam
 
 
@@ -41,6 +40,7 @@ def clean_html(raw, limit=1500):
     text = re.sub(r"<li[^>]*>", "• ", text, flags=re.I)
     text = re.sub(r"<[^>]+>", "", text)
     text = html.unescape(text)
+    text = re.sub(r"\[/?[a-zA-Z_*]+[^\]]*\]", "", text)  # balises Steam type [carousel]
     text = re.sub(r"\n{3,}", "\n\n", text).strip()
     if len(text) > limit:
         text = text[:limit].rsplit(" ", 1)[0] + "…"
@@ -121,8 +121,9 @@ def main():
     first_run = seen is None
     seen = seen or []
     if first_run:
-        new = items[-MAX_FIRST_RUN:]
-        seen = [i["id"] for i in items[:-MAX_FIRST_RUN]]
+        # premier lancement : on mémorise l'existant sans rien reposter (le test a déjà posté la dernière)
+        new = []
+        seen = [i["id"] for i in items]
     else:
         new = [i for i in items if i["id"] not in seen][-MAX_PER_RUN:]
     for it in new:
